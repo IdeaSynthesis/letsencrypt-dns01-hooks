@@ -23,6 +23,7 @@ Developed and tested on Ubuntu Linux 14.04 with Go 1.6 (earlier versions may wor
 
 - Requires https://github.com/lukas2511/letsencrypt.sh be installed, with all the dependencies.
 - Requires a Linode API key.
+
 ## Usage
 
 Request a certificate using dns01 challenge deployment: the required key is passed in via environment variable.
