@@ -131,8 +131,6 @@ func main(){
 		q.Add("TTL_sec", "60")
 		req.URL.RawQuery = q.Encode()
 
-		fmt.Printf("%v\r\n", req.URL)
-
 		resp, _ = client.Do(req)
 		defer resp.Body.Close()
 		
@@ -150,5 +148,61 @@ func main(){
 				}
 			}
 		}
+	}else if handler == "clean_challenge" {
+		target := "_acme-challenge."+domain
+
+		// see if there's already a resource
+		req, _ = http.NewRequest("GET", "https://api.linode.com", nil)
+		q = req.URL.Query()
+		q.Add("api_key", api_key)
+		q.Add("api_action", "domain.resource.list")
+		q.Add("DomainID", fmt.Sprintf("%v", domainid))
+		req.URL.RawQuery = q.Encode()
+
+		resp, _ = client.Do(req)
+		defer resp.Body.Close()
+		data, _ = ioutil.ReadAll(resp.Body)
+		d = json.NewDecoder(bytes.NewReader(data))
+		d.UseNumber()
+		_ = d.Decode(&input)
+		// resourcelist, _ := json.MarshalIndent(input, "", "  ")
+		// fmt.Printf("Contents: %v\n",string(resourcelist))
+		resourcelist := input.(map[string]interface{})["DATA"].([]interface{})
+		var resource map[string]interface{}
+		for _, rv := range resourcelist {
+			resource = rv.(map[string]interface{})
+			 // fmt.Printf("Looking For: [%s]; Name: [%s]; Target: [%s]; Type: %s\n", target, resource["NAME"].(string)+"."+root, resource["TARGET"].(string), resource["TYPE"].(string))
+			if resource["TYPE"].(string) == "TXT" && resource["NAME"].(string)+"."+root == target {
+				break
+			}else{
+				resource = nil
+				continue
+			}
+		}
+
+		// resoutput, _ := json.MarshalIndent(resource, "", "  ")
+		// fmt.Printf("Contents: %v\n",string(resoutput))		
+		if resource != nil {
+			// flush it
+			req, _ = http.NewRequest("GET", "https://api.linode.com", nil)
+			q = req.URL.Query()
+			q.Add("api_key", api_key)
+			q.Add("api_action", "domain.resource.delete")
+			q.Add("ResourceID", fmt.Sprintf("%v", resource["RESOURCEID"].(json.Number)))
+		}
+		q.Add("DomainID", fmt.Sprintf("%v", domainid))
+		q.Add("Target", token)
+		q.Add("TTL_sec", "60")
+		req.URL.RawQuery = q.Encode()
+
+		resp, _ = client.Do(req)
+		defer resp.Body.Close()
+		
+		if resp.StatusCode != 200 {
+			data, _ = ioutil.ReadAll(resp.Body)
+			fmt.Printf("Error: %s\n", string(data))
+		}
+	}else if handler == "deploy_cert" {
+		fmt.Printf("Deploying cert [%s] (full chain %s) and key [%s] for domain [%s]\n", os.Args[4], os.Args[5], os.Args[3], domain)
 	}
 }
