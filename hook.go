@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"strings"
 	"time"
 	"os"
 	"fmt"
+	"net"
 	"net/http"
 	"io/ioutil"
 	"encoding/json"
@@ -46,7 +48,10 @@ func main(){
 	data, _ = ioutil.ReadAll(resp.Body)
 	
 	var input interface{}
-	_ = json.Unmarshal(data, &input)
+	d := json.NewDecoder(bytes.NewReader(data))
+	d.UseNumber()
+	_ = d.Decode(&input)
+
 	//output, _ := json.MarshalIndent(domains, "", "  ")
 	// fmt.Printf("Contents: %v", string(output))
 	handler := os.Args[1]
@@ -69,9 +74,10 @@ func main(){
 	// output, _ := json.MarshalIndent(zone, "", "  ")
 	// fmt.Printf("Contents: %v\n",string(output))
 
-	// get the zone ID
-	domainid := zone["DOMAINID"].(float64)
-	
+	// get the zone ID and root
+	domainid := zone["DOMAINID"].(json.Number)
+	root := zone["DOMAIN"].(string)
+
 	// process the requested action
 	if handler == "deploy_challenge" {
 		target := "_acme-challenge."+domain
@@ -87,14 +93,17 @@ func main(){
 		resp, _ = client.Do(req)
 		defer resp.Body.Close()
 		data, _ = ioutil.ReadAll(resp.Body)
-		_ = json.Unmarshal(data, &input)
+		d = json.NewDecoder(bytes.NewReader(data))
+		d.UseNumber()
+		_ = d.Decode(&input)
 		// resourcelist, _ := json.MarshalIndent(input, "", "  ")
 		// fmt.Printf("Contents: %v\n",string(resourcelist))
 		resourcelist := input.(map[string]interface{})["DATA"].([]interface{})
 		var resource map[string]interface{}
 		for _, rv := range resourcelist {
 			resource = rv.(map[string]interface{})
-			if resource["TARGET"].(string) == target {
+			 // fmt.Printf("Looking For: [%s]; Name: [%s]; Target: [%s]; Type: %s\n", target, resource["NAME"].(string)+"."+root, resource["TARGET"].(string), resource["TYPE"].(string))
+			if resource["TYPE"].(string) == "TXT" && resource["NAME"].(string)+"."+root == target {
 				break
 			}else{
 				resource = nil
@@ -110,16 +119,19 @@ func main(){
 		if resource == nil {
 			// create
 			q.Add("api_action", "domain.resource.create")
+			q.Add("Type", "TXT")
+			q.Add("Name", target)
 		}else{
 			// update
 			q.Add("api_action", "domain.resource.update")
+			q.Add("ResourceID", fmt.Sprintf("%v", resource["RESOURCEID"].(json.Number)))
 		}
 		q.Add("DomainID", fmt.Sprintf("%v", domainid))
-		q.Add("Type", "TXT")
-		q.Add("Name", target)
 		q.Add("Target", token)
-		q.Add("TTL", "60")
+		q.Add("TTL_sec", "60")
 		req.URL.RawQuery = q.Encode()
+
+		fmt.Printf("%v\r\n", req.URL)
 
 		resp, _ = client.Do(req)
 		defer resp.Body.Close()
@@ -127,7 +139,16 @@ func main(){
 		if resp.StatusCode != 200 {
 			data, _ = ioutil.ReadAll(resp.Body)
 			fmt.Printf("Error: %s\n", string(data))
+		}else{
+			// need to loop: check every 10 seconds to see if the entry has propagated
+			var challenges []string
+			for {
+				time.Sleep(10 * time.Second)
+				challenges, _ = net.LookupTXT(target)
+				if challenges[0] == token {
+					break
+				}
+			}
 		}
 	}
 }
-
