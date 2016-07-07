@@ -143,7 +143,7 @@ func main(){
 			for {
 				time.Sleep(10 * time.Second)
 				challenges, _ = net.LookupTXT(target)
-				if challenges[0] == token {
+				if len(challenges) > 0 && challenges[0] == token {
 					break
 				}
 			}
