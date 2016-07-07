@@ -1,0 +1,6 @@
+# letsencrypt-dns01-hooks
+DNS provider hooks for the letsencrypt.sh script's dns01 ACME challenge
+
+https://github.com/lukas2511/letsencrypt.sh provides a BASH script that only uses OpenSSL/cURL and similar tools to retrieve letsencrypt certificates. It also provides support for the dns01 ACME challenge (which quite handily lets a certificate be requested and retrieved without having to write files anywhere, only requiring a DNS TXT record). To handle different DNS provider APIs, letsencrypt.sh delegates the DNS operations to a hook script. This repository contains a hook script (written in Go) that implements the hook command line interface.
+
+hook.go currently implements support for the Linode DNS API: it will retrieve an API key from the environment variable LINODE_API_KEY, then based on the domain you're requesting will check the Linode domains list accessible by that API key for the matching one. Once found, it will check for a TXT record with the name _acme-challenge.<domain name>, and if one exists it will update it; otherwise it will create it. It will wait until the new text record properly resolves on the local interface (Linode can take up to 15 minutes to reload their nameservers and have it propagate) and then it cleans up the record once letsencrypt is done with it.
