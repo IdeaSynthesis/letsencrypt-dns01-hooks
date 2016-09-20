@@ -16,7 +16,7 @@ hook.go currently implements support for the Linode DNS API: it will retrieve an
 Developed and tested on Ubuntu Linux 14.04 with Go 1.6 (earlier versions may work: we're not doing anything special here). Make sure that Go is installed and the workspace is setup with GOPATH properly defined. Then:
 
 - git clone https://github.com/IdeaSynthesis/letsencrypt-dns01-hooks $GOPATH/src/github.com/IdeaSynthesis/letsencrypt-dns01-hooks
-- cd $GOPATH/src/github.com/IdeaSynthesis.com/letsencrypt-dns01-hooks
+- cd $GOPATH/src/github.com/IdeaSynthesis/letsencrypt-dns01-hooks
 - go install
 
 ## Usage Requirements
