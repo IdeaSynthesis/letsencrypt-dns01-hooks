@@ -128,7 +128,7 @@ func main(){
 		}
 		q.Add("DomainID", fmt.Sprintf("%v", domainid))
 		q.Add("Target", token)
-		q.Add("TTL_sec", "60")
+		q.Add("TTL_sec", "3600")
 		req.URL.RawQuery = q.Encode()
 
 		resp, _ = client.Do(req)
