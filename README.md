@@ -30,7 +30,7 @@ Developed and tested on Ubuntu Linux 14.04 with [Go 1.6](https://launchpad.net/~
 Request a certificate using dns01 challenge deployment: the required key is passed in via environment variable.
 
 
-    LINODE_API_KEY=<API key from https://manager.linode.com/profile/api> <path to letsencrypt.sh> -c --out <path to output folder> --algo rsa --challenge dns-01 -d <DOMAIN> -k $GOPATH/bin/letsencrypt-dns01-hooks
+    LINODE_API_KEY=<API key from https://manager.linode.com/profile/api> <path to dehydrated> -c --out <path to output folder> --algo rsa --challenge dns-01 -d <DOMAIN> -k $GOPATH/bin/letsencrypt-dns01-hooks
 
 
 The hook will create or update the entry, then block until the DNS entry propagates. Unfortunately [dehydrated](https://github.com/lukas2511/dehydrated) (and I'm assuming letsencrypt's server in general) doesn't support completely splitting the request and the challenge phase, so we have to twiddle our thumbs until we can be certain the DNS record has been created.
