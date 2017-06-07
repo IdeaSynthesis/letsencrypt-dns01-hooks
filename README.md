@@ -35,6 +35,10 @@ Request a certificate using dns01 challenge deployment: the required key is pass
 
 The hook will create or update the entry, then block until the DNS entry propagates. Unfortunately [dehydrated](https://github.com/lukas2511/dehydrated) (and I'm assuming letsencrypt's server in general) doesn't support completely splitting the request and the challenge phase, so we have to twiddle our thumbs until we can be certain the DNS record has been created.
 
+## Using a specific DNS server to test propagation
+
+By default the hook will block until the DNS entry is visible to the local computer (which depends on how name resolution is setup on the computer running the hook). To use a specific DNS server instead, simply pass the IP address or host name of the DNS server using the DEHYDRATED_RESOLVER environment variable: the hook will then query that server directly instead.
+
 ## Future Work
 
 Update the implementation to choose an API based on the environment variables (should support any DNS provider with an API: at the least Route 53, which is the other DNS provider I use).
