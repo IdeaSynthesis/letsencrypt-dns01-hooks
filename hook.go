@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"io/ioutil"
 	"encoding/json"
+	"github.com/miekg/dns"
 	_ "strconv"
 )
 
@@ -128,7 +129,7 @@ func main(){
 		}
 		q.Add("DomainID", fmt.Sprintf("%v", domainid))
 		q.Add("Target", token)
-		q.Add("TTL_sec", "3600")
+		q.Add("TTL_sec", "300")
 		req.URL.RawQuery = q.Encode()
 
 		resp, _ = client.Do(req)
@@ -139,12 +140,35 @@ func main(){
 			fmt.Printf("Error: %s\n", string(data))
 		}else{
 			// need to loop: check every 10 seconds to see if the entry has propagated
-			var challenges []string
+			var resolver dns.Client
+			resolver_host := os.Getenv("DEHYDRATED_RESOLVER")
+			if resolver_host != "" {
+				resolver = dns.Client{}
+			}
 			for {
 				time.Sleep(10 * time.Second)
-				challenges, _ = net.LookupTXT(target)
-				if len(challenges) > 0 && challenges[0] == token {
-					break
+				if resolver_host != "" {
+					msg := new(dns.Msg)
+					msg.Id = dns.Id()
+					msg.RecursionDesired = false
+					msg.Question = make([]dns.Question, 1)
+					msg.Question[0] = dns.Question{target+".", dns.TypeTXT, dns.ClassINET}
+					in, _, err1 := resolver.Exchange(msg, resolver_host+":53")
+					if err1 == nil {
+						if len(in.Answer) > 0 {
+							txt := in.Answer[0].(*dns.TXT)
+							if txt.Txt[0] == token {
+								break
+							}
+						}
+					}
+				}else{
+					challenges, err1 := net.LookupTXT(target)
+					if err1 == nil && len(challenges) > 0 {
+						if challenges[0] == token {
+							break
+						}
+					}
 				}
 			}
 		}
