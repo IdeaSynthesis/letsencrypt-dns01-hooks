@@ -56,31 +56,33 @@ func main(){
 	//output, _ := json.MarshalIndent(domains, "", "  ")
 	// fmt.Printf("Contents: %v", string(output))
 	handler := os.Args[1]
-	domain := os.Args[2]
-	// filename := os.Args[3]
-	token := os.Args[4]
-	//fmt.Printf("Handler: %s\n", handler)
-	domains := input.(map[string]interface{})["DATA"].([]interface{})
-	var zone map[string]interface{}
-	for _, v := range domains {
-		zone = v.(map[string]interface{})
-		if !strings.HasSuffix(domain, zone["DOMAIN"].(string)) {
-			zone = nil
-			continue
-		}else{
-			break
-		}
-	}
-
-	// output, _ := json.MarshalIndent(zone, "", "  ")
-	// fmt.Printf("Contents: %v\n",string(output))
-
-	// get the zone ID and root
-	domainid := zone["DOMAINID"].(json.Number)
-	root := zone["DOMAIN"].(string)
 
 	// process the requested action
 	if handler == "deploy_challenge" {
+		domain := os.Args[2]
+		// filename := os.Args[3]
+
+		//fmt.Printf("Handler: %s\n", handler)
+		domains := input.(map[string]interface{})["DATA"].([]interface{})
+		var zone map[string]interface{}
+		for _, v := range domains {
+			zone = v.(map[string]interface{})
+			if !strings.HasSuffix(domain, zone["DOMAIN"].(string)) {
+				zone = nil
+				continue
+			}else{
+				break
+			}
+		}
+		
+		// output, _ := json.MarshalIndent(zone, "", "  ")
+		// fmt.Printf("Contents: %v\n",string(output))
+		
+		// get the zone ID and root
+		domainid := zone["DOMAINID"].(json.Number)
+		root := zone["DOMAIN"].(string)
+		
+		token := os.Args[4]
 		target := "_acme-challenge."+domain
 
 		// see if there's already a resource
@@ -173,7 +175,31 @@ func main(){
 			}
 		}
 	}else if handler == "clean_challenge" {
+		domain := os.Args[2]
+		// filename := os.Args[3]
+
+		//fmt.Printf("Handler: %s\n", handler)
+		domains := input.(map[string]interface{})["DATA"].([]interface{})
+		var zone map[string]interface{}
+		for _, v := range domains {
+			zone = v.(map[string]interface{})
+			if !strings.HasSuffix(domain, zone["DOMAIN"].(string)) {
+				zone = nil
+				continue
+			}else{
+				break
+			}
+		}
+		
+		// output, _ := json.MarshalIndent(zone, "", "  ")
+		// fmt.Printf("Contents: %v\n",string(output))
+		
+		// get the zone ID and root
+		domainid := zone["DOMAINID"].(json.Number)
+		root := zone["DOMAIN"].(string)
+
 		target := "_acme-challenge."+domain
+		token := os.Args[4]
 
 		// see if there's already a resource
 		req, _ = http.NewRequest("GET", "https://api.linode.com", nil)
@@ -227,6 +253,11 @@ func main(){
 			fmt.Printf("Error: %s\n", string(data))
 		}
 	}else if handler == "deploy_cert" {
+		domain := os.Args[2]
 		fmt.Printf("Deploying cert [%s] (full chain %s) and key [%s] for domain [%s]\n", os.Args[4], os.Args[5], os.Args[3], domain)
+	}else if handler == "invalid_challenge" {
+	}else if handler == "exit_hook" {
+	}else if handler == "unchanged_cert" {
+	}else if handler == "request_failure" {		
 	}
 }
